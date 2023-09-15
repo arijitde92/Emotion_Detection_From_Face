@@ -10,9 +10,9 @@ from Model import Net
 from torchinfo import summary
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-BATCH_SIZE = 64
+BATCH_SIZE = 512
 LEARNING_RATE = 0.02
-N_EPOCHS = 32
+N_EPOCHS = 100
 MOMENTUM = 0.9
 WEIGHT_DECAY = 9e-4
 MODEL_SAVE_DIR = 'trained_model'
@@ -24,6 +24,7 @@ def plot(train_losses, train_acc, test_losses, test_acc, label):
     axs[0].set_title("Test Loss")
     axs[1].plot(test_acc, label=label)
     axs[1].set_title("Test Accuracy")
+    plt.show()
 
 
 def get_lr(optimizer):

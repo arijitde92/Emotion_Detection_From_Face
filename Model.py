@@ -16,7 +16,7 @@ class Net(nn.Module):
             nn.BatchNorm2d(64),
 
             nn.MaxPool2d(2, 2),  # output_size = 24
-            nn.Dropout(dropout),
+            # nn.Dropout(dropout),
 
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(3, 3), padding=1, bias=False),
             nn.ReLU(),
@@ -27,7 +27,7 @@ class Net(nn.Module):
             nn.BatchNorm2d(256),
 
             nn.MaxPool2d(2, 2),  # output_size = 12
-            nn.Dropout(dropout),
+            # nn.Dropout(dropout),
 
             nn.Conv2d(in_channels=256, out_channels=512, kernel_size=(3, 3), padding=1, bias=False),
             nn.ReLU(),
@@ -38,7 +38,7 @@ class Net(nn.Module):
             nn.BatchNorm2d(1024),
 
             nn.MaxPool2d(2, 2),  # output_size = 6
-            nn.Dropout(dropout)
+            # nn.Dropout(dropout)
         )
 
         self.fcn = nn.Sequential(

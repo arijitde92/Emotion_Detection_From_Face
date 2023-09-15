@@ -28,7 +28,7 @@ def fill_labels(image_paths: List):
 def get_paths_and_labels(val_split=0.2, shuffle=True):
     train_image_paths = glob(os.path.join(TRAIN_DIR, '**', '*.jpg'))
     test_image_paths = glob(os.path.join(TRAIN_DIR, '**', '*.jpg'))
-    n_train_images = len(train_image_paths)
+    n_test_images = len(test_image_paths)
     if shuffle:
         random.shuffle(train_image_paths)
         random.shuffle(test_image_paths)
@@ -36,22 +36,22 @@ def get_paths_and_labels(val_split=0.2, shuffle=True):
         train_image_paths.sort()
         test_image_paths.sort()
     print(f"Found {len(train_image_paths)} train images\nSplitting into validation and training with val={val_split}")
-    val_image_paths = train_image_paths[:int(val_split*n_train_images)]
-    training_image_paths = train_image_paths[int(val_split*n_train_images):]
-    train_labels = fill_labels(training_image_paths)
+    val_image_paths = test_image_paths[:int(val_split*n_test_images)]
+    testing_image_paths = test_image_paths[int(val_split*n_test_images):]
+    train_labels = fill_labels(train_image_paths)
     val_labels = fill_labels(val_image_paths)
-    test_labels = fill_labels(test_image_paths)
-    print("Total Training images:", len(training_image_paths))
+    test_labels = fill_labels(testing_image_paths)
+    print("Total Training images:", len(train_image_paths))
     print("Total Validation images:", len(val_image_paths))
-    print("Total Test images:", len(test_image_paths))
-    return (training_image_paths, train_labels), (val_image_paths, val_labels), (test_image_paths, test_labels)
+    print("Total Test images:", len(testing_image_paths))
+    return (train_image_paths, train_labels), (val_image_paths, val_labels), (testing_image_paths, test_labels)
 
 
 def get_transforms():
     train_transform = A.Compose(
         [
             A.HorizontalFlip(p=0.8),
-            A.ShiftScaleRotate(shift_limit=(-0.08, 0.08), scale_limit=(-0.001, 0.001), rotate_limit=(-15, 15),
+            A.ShiftScaleRotate(shift_limit=(-0.1, 0.1), scale_limit=(-0.001, 0.001), rotate_limit=(-15, 15),
                                interpolation=1, border_mode=2, p=0.9),
             ToTensorV2(),
         ]
