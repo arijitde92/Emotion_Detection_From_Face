@@ -1,3 +1,5 @@
+import os.path
+
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
@@ -20,10 +22,12 @@ MODEL_SAVE_DIR = 'trained_model'
 
 def plot(train_losses, train_acc, test_losses, test_acc, label):
     fig, axs = plt.subplots(1, 2, figsize=(20, 8))
-    axs[0].plot(test_losses, label=label)
-    axs[0].set_title("Test Loss")
-    axs[1].plot(test_acc, label=label)
-    axs[1].set_title("Test Accuracy")
+    axs[0].plot(test_losses, label='val loss')
+    axs[0].plot(train_losses, label='train loss')
+    axs[0].set_title("Loss")
+    axs[1].plot(test_acc, label='test accuracy')
+    axs[1].plot(train_acc, label='train accuracy')
+    axs[1].set_title("Accuracy")
     plt.show()
 
 
@@ -103,10 +107,14 @@ if __name__ == '__main__':
     epoch_train_loss = []
     epoch_valid_acc = []
     epoch_valid_loss = []
+    min_val_loss = 99999
     print("Starting Training")
     for epoch in range(N_EPOCHS):
         print("EPOCH: %s LR: %s " % (epoch, get_lr(optimizer)))
         t_loss, t_acc, v_loss, v_acc = train(model, train_loader, val_loader, optimizer, scheduler, criterion)
+        if v_loss < min_val_loss:
+            print("Validation Loss decreased, saving model")
+            torch.save(model.state_dict(), os.path.join(MODEL_SAVE_DIR, 'best_model.pth'))
         epoch_train_loss.append(t_loss)
         epoch_train_acc.append(t_acc)
         epoch_valid_acc.append(v_acc)
