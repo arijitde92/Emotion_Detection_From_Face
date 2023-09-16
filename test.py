@@ -67,7 +67,7 @@ if __name__ == '__main__':
     model = Net(dropout=0.2, num_classes=get_num_classes())
     print("Loading Model")
     model.load_state_dict(torch.load(os.path.join(MODEL_SAVE_DIR, 'best_model.pth')))
-    print(f"Using {DEVICE} for training")
+    print(f"Using {DEVICE} for testing")
     model.to(DEVICE)
     print("Creating Data loaders")
     _, test_transforms = get_transforms()
