@@ -5,7 +5,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from torch.optim import SGD
+from torch.optim import SGD, Adam
 from preprocess_data import get_paths_and_labels, get_transforms, get_num_classes
 from FER_Dataset import FERDataset
 from Model import Net
@@ -13,7 +13,7 @@ from torchinfo import summary
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 BATCH_SIZE = 512
-LEARNING_RATE = 0.02
+LEARNING_RATE = 0.002
 N_EPOCHS = 100
 MOMENTUM = 0.9
 WEIGHT_DECAY = 9e-4
@@ -25,9 +25,10 @@ def plot(train_losses, train_acc, test_losses, test_acc, label):
     axs[0].plot(test_losses, label='val loss')
     axs[0].plot(train_losses, label='train loss')
     axs[0].set_title("Loss")
-    axs[1].plot(test_acc, label='test accuracy')
+    axs[1].plot(test_acc, label='val accuracy')
     axs[1].plot(train_acc, label='train accuracy')
-    axs[1].set_title("Accuracy")
+    axs[1].set_title(label)
+    plt.savefig(f'{label}.png')
     plt.show()
 
 
@@ -97,10 +98,15 @@ if __name__ == '__main__':
     test_dataset = FERDataset(test_data[0], test_data[1], test_transforms)
     test_loader = DataLoader(test_dataset, batch_size=4, num_workers=2)
 
-    optimizer = SGD(model.parameters(), lr=0.002, momentum=0.9, weight_decay=9e-4)
-    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.02, steps_per_epoch=len(train_loader),
-                                                    pct_start=0.2, div_factor=10, cycle_momentum=False, epochs=N_EPOCHS)
-    criterion = nn.CrossEntropyLoss()
+    sgd_optimizer = SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM, weight_decay=WEIGHT_DECAY)
+    adam_optimizer = Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+    optimizers = {'SGD': sgd_optimizer,
+                  'ADAM': adam_optimizer}
+
+    cross_entropy_loss = nn.CrossEntropyLoss()
+    kl_div_loss = nn.KLDivLoss()
+    loss_functions = {'cross_entropy': cross_entropy_loss,
+                      'kl_div': kl_div_loss}
     input_size = (BATCH_SIZE, 3, 48, 48)
     summary(model, input_size=input_size)
     epoch_train_acc = []
@@ -109,14 +115,24 @@ if __name__ == '__main__':
     epoch_valid_loss = []
     min_val_loss = 99999
     print("Starting Training")
-    for epoch in range(N_EPOCHS):
-        print("EPOCH: %s LR: %s " % (epoch, get_lr(optimizer)))
-        t_loss, t_acc, v_loss, v_acc = train(model, train_loader, val_loader, optimizer, scheduler, criterion)
-        if v_loss < min_val_loss:
-            print("Validation Loss decreased, saving model")
-            torch.save(model.state_dict(), os.path.join(MODEL_SAVE_DIR, 'best_model.pth'))
-        epoch_train_loss.append(t_loss)
-        epoch_train_acc.append(t_acc)
-        epoch_valid_acc.append(v_acc)
-        epoch_valid_loss.append(v_loss)
-    plot(epoch_train_loss, epoch_train_acc, epoch_valid_loss, epoch_valid_acc, 'Loss & Accuracy')
+    for optimizer_name, optimizer in optimizers.items():
+        for loss_name, loss_function in loss_functions.items():
+            scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.02, steps_per_epoch=len(train_loader),
+                                                            pct_start=0.2, div_factor=10, cycle_momentum=False,
+                                                            epochs=N_EPOCHS)
+            print("Optimizer:", optimizer_name)
+            print("Loss function:", loss_name)
+            for epoch in range(N_EPOCHS):
+                print("EPOCH: %s LR: %s " % (epoch, get_lr(optimizer)))
+                t_loss, t_acc, v_loss, v_acc = train(model, train_loader, val_loader, optimizer, scheduler,
+                                                     loss_function)
+                if v_loss < min_val_loss:
+                    print("Validation Loss decreased, saving model")
+                    torch.save(model.state_dict(), os.path.join(MODEL_SAVE_DIR,
+                                                                f'{optimizer_name}_{loss_name}_best_model.pth'))
+                epoch_train_loss.append(t_loss)
+                epoch_train_acc.append(t_acc)
+                epoch_valid_acc.append(v_acc)
+                epoch_valid_loss.append(v_loss)
+            plot(epoch_train_loss, epoch_train_acc, epoch_valid_loss, epoch_valid_acc,
+                 f'Loss & Accuracy with {optimizer_name} optimizer and {loss_name} loss function')
